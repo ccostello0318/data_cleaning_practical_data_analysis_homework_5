@@ -83,8 +83,6 @@ debt_raw_2 <- debt_raw |> mutate(
     ~ as.numeric(ifelse(.x == "no data", NA, .x))
   )
 )
-
-summary(debt_raw_2)
 ```
 
 ### Annual GDP Growth Data

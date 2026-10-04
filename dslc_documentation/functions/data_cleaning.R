@@ -126,4 +126,7 @@ clean_growth_data <- function(raw_data) {
 join_country_data_sets <- function(debt_raw, gdp_raw) {
   debt <- clean_debt_data(debt_raw)
   growth <- clean_growth_data(gdp_raw)
+  
+  combine <- debt |> inner_join(growth, by = c("country_name", "year"))
+  return(combine)
 }

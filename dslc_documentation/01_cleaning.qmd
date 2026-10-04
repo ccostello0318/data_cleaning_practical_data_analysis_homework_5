@@ -220,3 +220,9 @@ setdiff(growth_country_names, debt_country_names)
 ```
 
 The debt data set has more countries, but all countries in the GDP growth data set are contained in the debt data set. We can now continue with the join.
+
+```{r data join}
+join_country_data_sets(debt_raw, gdp_raw) |> filter(country_name == "Australia", year %in% 1960:1969)
+```
+
+We now have a data set to do analysis with. $\square$

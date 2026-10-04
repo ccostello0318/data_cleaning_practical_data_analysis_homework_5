@@ -188,7 +188,7 @@ We are missing data for many countries in each year (with 2024 as an example). T
 
 This data does have appropriate `NA` values for missing data.
 
-An issue with this data set is that there is no easy way to seperate countries and non-countries. This must be recognized when performing a join between our two data sets.
+An issue with this data set is that there is no easy way to separate countries and non-countries. This must be recognized when performing a join between our two data sets.
 
 #### Assessing column names
 

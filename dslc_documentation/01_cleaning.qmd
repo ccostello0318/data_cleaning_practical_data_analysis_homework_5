@@ -31,8 +31,44 @@ editor_options:
 
 ### Data dictionary
 
+`debt.xls` is a wide data set which has the following variables:
+Each row refers to its own country, each column refers to its own year, and the data collected is the percentage public sector debt relative to Gross Domestic Product (GDP). In other words, what is the government's debt relative to the country's economy size?
+
+| Variable                                 | Description                                                       |
+| :--------------------------------------- | :---------------------------------------------------------------- |
+| Central Government Debt (Percent of GDP) | The country name of interest                                      |
+| 1950 ... 2024                            | The year of the estimate (Central Government Debt Percent of GDP) |
+| Estimates start after                    | The year before these estimates were created                      |
+
+The data is sourced from the International Monetary Fund, which calculates this value by estimating the Gross Domestic Product (GDP) and public debt of a country, then $\frac{\text{public debt (\$)}}{\text{GDP (\$)}} \times 100$. It is important that by this definition, we would expect this value to range from zero to infinity (note that public debt can be larger than GDP.)
+
+`growth.csv` is another wide data set which has the following variables
+
+| Variable        | Description                                   |
+| :-------------- | :-------------------------------------------- |
+| County.Name     | The full name of country                      |
+| Country.Code    | A three letter code for a country             |
+| Indicator.Name  | The parameter of interest (always GDP growth) |
+| Indicator.Code  | The code for the parameter of interest        |
+| X1960 ... X2025 | The year of the estimate                      |
+
+The data is sourced from the World Bank Ground (WBG), which collects its data from official country statistics, Organisation for Economic Co-operation and Development (OECD), and other sources.
 
 ## Step 2: Loading in the data
+
+### Debt Data
+
+```{r load debt data 1}
+library(readxl)
+
+debt_raw <- read_xls("./data/debt.xls")
+
+dim(debt_raw)
+```
+
+This mostly makes sense. Data from this set goes from 1950 to 2024 (74 + 3 columns) and should have 189 countries included.
+
+We can try and fix this by being more specific in our extraction.
 
 
 ## Step 3: Examine the data and create action items

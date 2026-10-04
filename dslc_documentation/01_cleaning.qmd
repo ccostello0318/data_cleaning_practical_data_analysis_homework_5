@@ -58,18 +58,47 @@ The data is sourced from the World Bank Ground (WBG), which collects its data fr
 
 ### Debt Data
 
-```{r load debt data 1}
+```{r load debt data, message = FALSE, warning = FALSE}
 library(readxl)
 
-debt_raw <- read_xls("./data/debt.xls")
+debt_raw <- read_xls("../data/debt.xls")
 
 dim(debt_raw)
+
+class(debt_raw$`1950`)
 ```
 
-This mostly makes sense. Data from this set goes from 1950 to 2024 (74 + 3 columns) and should have 189 countries included.
+This mostly makes sense. Data from this set goes from 1950 to 2024 (74 + 3 columns).
 
-We can try and fix this by being more specific in our extraction.
+We should consider removing/renaming unnecessary/confusingly named columns.
+We may also want to replace "no data" with `NA` such that our entry values can be numeric. We will do this at an early state to make examining the data simpler.
 
+```{r numeric debt data, message = FALSE, warning = FALSE}
+library(tidyverse)
+
+debt_raw_2 <- debt_raw |> mutate(
+  across(
+    -1,
+     # If entry reads "no data," replace with NA, otherwise keep the same. Turn numeric.
+    ~ as.numeric(ifelse(.x == "no data", NA, .x))
+  )
+)
+
+summary(debt_raw_2)
+```
+
+### Annual GDP Growth Data
+
+```{r load gdp data}
+gdp_raw <- read.csv("../data/growth.csv")
+
+dim(gdp_raw)
+
+summary(gdp_raw$X1960)
+summary(gdp_raw$X1961)
+```
+
+From a cursory glance, this data set has fewer entries than the debt data set. It will be important to see which countries appear in both. It is also important to note that data does not exist for 1960 (which may be set as a baseline.)
 
 ## Step 3: Examine the data and create action items
 

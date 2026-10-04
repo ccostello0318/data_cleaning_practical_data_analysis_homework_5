@@ -200,3 +200,23 @@ An issue with this data set is that there is no easy way to separate countries a
 
 
 ## Step 4: Clean and pre-process the data
+
+Let's recreate the tables shown for Australia from 1960 to 1969.
+
+```{r two table output}
+clean_debt_data(debt_raw) |> filter(country_name == "Australia", year %in% 1960:1969)
+
+clean_growth_data(gdp_raw) |> filter(country_name == "Australia", year %in% 1960:1969)
+```
+
+To join the two data sets, we need to look at the country names from each output.
+
+```{r country names}
+debt_country_names <- clean_debt_data(debt_raw)$country_name |> unique()
+growth_country_names <- clean_growth_data(gdp_raw)$country_name |> unique()
+
+setdiff(debt_country_names, growth_country_names)
+setdiff(growth_country_names, debt_country_names)
+```
+
+The debt data set has more countries, but all countries in the GDP growth data set are contained in the debt data set. We can now continue with the join.

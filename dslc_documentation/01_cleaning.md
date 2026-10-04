@@ -1,0 +1,343 @@
+# Re-evaluating Growth in the Time of Debt
+
+
+## Domain problem formulation
+
+## Data source overview
+
+## Step 1: Review background information
+
+### Data dictionary
+
+`debt.xls` is a wide data set which has the following variables: Each
+row refers to its own country, each column refers to its own year, and
+the data collected is the percentage public sector debt relative to
+Gross Domestic Product (GDP). In other words, what is the government’s
+debt relative to the country’s economy size?
+
+| Variable | Description |
+|:---|:---|
+| Central Government Debt (Percent of GDP) | The country name of interest |
+| 1950 … 2024 | The year of the estimate (Central Government Debt Percent of GDP) |
+| Estimates start after | The year before these estimates were created |
+
+The data is sourced from the International Monetary Fund, which
+calculates this value by estimating the Gross Domestic Product (GDP) and
+public debt of a country, then
+$\frac{\text{public debt (\$)}}{\text{GDP (\$)}} \times 100$. It is
+important that by this definition, we would expect this value to range
+from zero to infinity (note that public debt can be larger than GDP.)
+
+`growth.csv` is another wide data set which has the following variables
+
+| Variable       | Description                                   |
+|:---------------|:----------------------------------------------|
+| County.Name    | The full name of country                      |
+| Country.Code   | A three letter code for a country             |
+| Indicator.Name | The parameter of interest (always GDP growth) |
+| Indicator.Code | The code for the parameter of interest        |
+| X1960 … X2025  | The year of the estimate                      |
+
+The data is sourced from the World Bank Ground (WBG), which collects its
+data from official country statistics, Organisation for Economic
+Co-operation and Development (OECD), and other sources.
+
+## Step 2: Loading in the data
+
+### Debt Data
+
+``` r
+library(readxl)
+
+debt_raw <- read_xls("../data/debt.xls")
+
+dim(debt_raw)
+```
+
+    [1] 389  77
+
+``` r
+class(debt_raw$`1950`)
+```
+
+    [1] "character"
+
+This mostly makes sense. Data from this set goes from 1950 to 2024 (74 +
+3 columns).
+
+We should consider removing/renaming unnecessary/confusingly named
+columns. We may also want to replace “no data” with `NA` such that our
+entry values can be numeric.
+
+``` r
+library(tidyverse)
+
+debt_raw_2 <- debt_raw |> mutate(
+  across(
+    -1,
+
+    ~ as.numeric(ifelse(.x == "no data", NA, .x))
+  )
+)
+```
+
+### Annual GDP Growth Data
+
+``` r
+gdp_raw <- read.csv("../data/growth.csv")
+
+dim(gdp_raw)
+```
+
+    [1] 265  71
+
+``` r
+summary(gdp_raw$X1960)
+```
+
+       Mode    NA's 
+    logical     265 
+
+``` r
+summary(gdp_raw$X1961)
+```
+
+       Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+    -27.270   1.597   4.352   3.712   6.078  22.849     121 
+
+From a cursory glance, this data set has fewer entries than the debt
+data set. It will be important to see which countries appear in both. It
+is also important to note that data does not exist for 1960 (which may
+be set as a baseline.)
+
+## Step 3: Examine the data and create action items
+
+### Debt Data
+
+#### Finding invalid values
+
+We should make our columns numeric when possible. Therefore we need to
+replace “no data” entries with `NA`. This will be achieved using the
+following function.
+
+``` r
+source("functions/data_cleaning.R")
+
+debt <- replace_non_numeric(debt_raw, "no data")
+```
+
+The first two rows are empty, so we can ignore them.
+
+``` r
+debt <- debt[-c(1, 2), ]
+```
+
+Rows 239 onward do not represent countries. We can remove them.
+
+``` r
+debt <- debt[1:238, ]
+```
+
+#### Assessing Column names
+
+The first column should be renamed to better reflect how it represents a
+country.
+
+``` r
+debt <- debt |> rename(country_name = `Central Government Debt (Percent of GDP)`)
+```
+
+`Estimates start after` contains no useful information, we will remove
+this column.
+
+``` r
+debt <- debt |> select(-`Estimates start after`)
+```
+
+In the end, it may be helpful to create a long table. We will create a
+new column called `debt_pct_gdp` for this.
+
+``` r
+debt_long <- debt |> pivot_longer(
+  cols = -1,
+  names_to = "year",
+  values_to = "debt_pct_gdp"
+)
+```
+
+#### Assessing variable type
+
+``` r
+class(debt_long$country_name)
+```
+
+    [1] "character"
+
+``` r
+debt_long <- debt_long |> mutate(year = as.numeric(year))
+class(debt_long$year)
+```
+
+    [1] "numeric"
+
+``` r
+class(debt_long$debt_pct_gdp)
+```
+
+    [1] "numeric"
+
+#### Assessing data completeness
+
+Are there any missing combinations?
+
+``` r
+expected <- expand_grid(
+  country_name = unique(debt_long$country_name),
+  year = unique(debt_long$year)
+)
+
+missing <- expected |>
+  anti_join(debt_long, by = c("country_name", "year"))
+
+nrow(missing)
+```
+
+    [1] 0
+
+We can see that each combination is present. However it is important to
+note that we do not always have data for each country-year combination.
+
+``` r
+summary(debt["2024"])
+```
+
+          2024        
+     Min.   :  2.291  
+     1st Qu.: 39.375  
+     Median : 55.459  
+     Mean   : 63.108  
+     3rd Qu.: 75.169  
+     Max.   :271.979  
+     NA's   :82       
+
+We are missing data for many countries in each year (with 2024 as an
+example). This can be for a few reasons (for historical data, the
+country may not have existed, and other countries may not have stable
+governments/reliable reporting of these figures.) This is something that
+must be noted.
+
+### GDP Data
+
+#### Finding invalid values
+
+This data does have appropriate `NA` values for missing data.
+
+An issue with this data set is that there is no easy way to separate
+countries and non-countries. This must be recognized when performing a
+join between our two data sets.
+
+#### Assessing column names
+
+`Country.Name` should be rewritten as `county_name` in accordance to
+snake case. Each year column is prefixed by an `X`. This may be easier
+to remove once columns have been pivoted longer. The column generated by
+`values_to` for this pivot should be named `growth_pct_gdp`. Other
+columns will be unnecessary.
+
+#### Assessing variable type
+
+`country_name` should be a character variable, `year` should be a
+numeric (or date), and `growth_pct_gdp` should be a numeric.
+
+## Step 4: Clean and pre-process the data
+
+Let’s recreate the tables shown for Australia from 1960 to 1969.
+
+``` r
+clean_debt_data(debt_raw) |> filter(country_name == "Australia", year %in% 1960:1969)
+```
+
+    # A tibble: 10 × 3
+       country_name  year debt_pct_gdp
+       <chr>        <dbl>        <dbl>
+     1 Australia     1960         48.3
+     2 Australia     1961         49.3
+     3 Australia     1962         50.2
+     4 Australia     1963         47.5
+     5 Australia     1964         44.9
+     6 Australia     1965         43.7
+     7 Australia     1966         42.4
+     8 Australia     1967         40.5
+     9 Australia     1968         39.4
+    10 Australia     1969         36.7
+
+``` r
+clean_growth_data(gdp_raw) |> filter(country_name == "Australia", year %in% 1960:1969)
+```
+
+    # A tibble: 10 × 3
+       country_name  year growth_pct_gdp
+       <chr>        <dbl>          <dbl>
+     1 Australia     1960          NA   
+     2 Australia     1961           2.48
+     3 Australia     1962           1.30
+     4 Australia     1963           6.21
+     5 Australia     1964           6.98
+     6 Australia     1965           5.98
+     7 Australia     1966           2.38
+     8 Australia     1967           6.31
+     9 Australia     1968           5.10
+    10 Australia     1969           7.05
+
+To join the two data sets, we need to look at the country names from
+each output.
+
+``` r
+debt_country_names <- clean_debt_data(debt_raw)$country_name |> unique()
+growth_country_names <- clean_growth_data(gdp_raw)$country_name |> unique()
+
+setdiff(debt_country_names, growth_country_names)
+```
+
+     [1] "Anguilla"                         "Sint Eustatius and Saba Bonaire" 
+     [3] "British Indian Ocean Territories" "Cook Islands"                    
+     [5] "Falkland Islands"                 "French Guiana"                   
+     [7] "Guadeloupe"                       "Holy See"                        
+     [9] "Martinique"                       "Mayotte"                         
+    [11] "Montserrat"                       "Niue"                            
+    [13] "Pitcairn"                         "Reunion"                         
+    [15] "Saint Helena"                     "Saint Martin"                    
+    [17] "Saint-Pierre and Miquelon"        "Sint Maarten"                    
+    [19] "Svalbard and Jan Mayen Islands"   "Taiwan Province of China"        
+    [21] "Tokelau"                          "Wallis and Futuna Islands"       
+    [23] "Western Sahara"                  
+
+``` r
+setdiff(growth_country_names, debt_country_names)
+```
+
+    character(0)
+
+The debt data set has more countries, but all countries in the GDP
+growth data set are contained in the debt data set. We can now continue
+with the join.
+
+``` r
+join_country_data_sets(debt_raw, gdp_raw) |> filter(country_name == "Australia", year %in% 1960:1969)
+```
+
+    # A tibble: 10 × 4
+       country_name  year debt_pct_gdp growth_pct_gdp
+       <chr>        <dbl>        <dbl>          <dbl>
+     1 Australia     1960         48.3          NA   
+     2 Australia     1961         49.3           2.48
+     3 Australia     1962         50.2           1.30
+     4 Australia     1963         47.5           6.21
+     5 Australia     1964         44.9           6.98
+     6 Australia     1965         43.7           5.98
+     7 Australia     1966         42.4           2.38
+     8 Australia     1967         40.5           6.31
+     9 Australia     1968         39.4           5.10
+    10 Australia     1969         36.7           7.05
+
+We now have a data set to do analysis with. $\square$

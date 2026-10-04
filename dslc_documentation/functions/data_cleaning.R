@@ -38,5 +38,24 @@ clean_debt_data <- function(raw_data) {
 }
 
 clean_growth_data <- function(raw_data) {
+  # Deselect columns
+  data <- raw_data |> select(-Country.Code, -Indicator.Name, -Indicator.Code, -X)
   
+  # Rename `country_name`
+  data <- data |> rename(country_name = `Country.Name`)
+  
+  # Pivot longer
+  data <- data |> pivot_longer(
+    cols = -1, # Ignore first column
+    names_to = "year",
+    values_to = "growth_pct_gdp"
+  )
+  
+  # Remove X at front of year, then make numeric
+  data <- data |> mutate(
+    year = as.numeric(substring(year, 2))
+  )
+  
+  
+  return(data)
 }

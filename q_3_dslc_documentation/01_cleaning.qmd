@@ -605,12 +605,66 @@ organs_original |>
 One exploration idea is to modify the code above to overlay another bar chart (using a different color) of the number of non-missing `TOTAL Actual DD` counts. 
 
 
+One idea I have is to find which country-years are missing data for `TOTAL Actual DD` (hence it is `NA`) and which have data. This is different from whether or not the row exists, since even if the entry is given, it may still be unknown.
+
+```{r}
+organs_original |>
+  group_by(REPORTYEAR) |>
+  summarise(
+    non_missing = sum(!is.na(`TOTAL Actual DD`)),
+    missing = sum(is.na(`TOTAL Actual DD`))) |>
+  pivot_longer(
+    cols = c(non_missing, missing),
+    names_to = "status",
+    values_to = "count") |>
+  ggplot() +
+  geom_col(
+    aes(x = REPORTYEAR, y = count, fill = status)) +
+  scale_fill_manual(
+    values = c(
+      "non_missing" = "blue",
+      "missing" = "red"))
+```
+
+This graph paints a slightly different picture. Overall, more countries have reported their organ donation rates due to deaths as time as passed. The first graph may have been misleading since it suggests that reporting has decreased, but this graph suggests that the reporting body is still waiting for this data for many countries. Perhaps a country is only marked `NA` after some time has passed without the country reporting these figures (or if the country refuses to report these figures, though that is just speculation.)
+
 :::: {.blackbox data-latex=""}
 ::: {.center data-latex=""}
 **Data cleaning action item: Complete the data**
 :::
 Complete the data by adding in the missing rows and filling them with NA values. This should be done *prior* to missing value imputation so that the missing values we create are filled in during imputation.
 ::::
+
+We can do this by using `expand_grid()` to find all possible country-year combinations, and then left joining it with the original data.
+```{r}
+all_combos <- expand.grid(
+  COUNTRY = unique(organs_original$COUNTRY),
+  REPORTYEAR = unique(organs_original$REPORTYEAR)
+)
+
+organs_complete <- all_combos |> left_join(
+  organs_original, by = c("COUNTRY", "REPORTYEAR")
+)
+
+organs_complete |>
+  group_by(REPORTYEAR) |>
+  summarise(
+    non_missing = sum(!is.na(`TOTAL Actual DD`)),
+    missing = sum(is.na(`TOTAL Actual DD`))) |>
+  pivot_longer(
+    cols = c(non_missing, missing),
+    names_to = "status",
+    values_to = "count") |>
+  ggplot() +
+  geom_col(
+    aes(x = REPORTYEAR, y = count, fill = status)) +
+  scale_fill_manual(
+    values = c(
+      "non_missing" = "blue",
+      "missing" = "red"))
+```
+
+Now we have replaced any missing values with `NA`, as seen by this graph.
 
 
 Having concluded the suggested explorations, let's now address any remaining questions and assumptions that we have. 

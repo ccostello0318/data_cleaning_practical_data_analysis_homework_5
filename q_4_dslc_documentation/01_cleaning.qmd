@@ -32,7 +32,7 @@ Each row refers to its own country, each column refers to its own year, and the 
 | 1950 ... 2024                            | The year of the estimate (Central Government Debt Percent of GDP) |
 | Estimates start after                    | The year before these estimates were created                      |
 
-The data is sourced from the International Monetary Fund, which calculates this value by estimating the Gross Domestic Product (GDP) and public debt of a country, then $\frac{\text{public debt (\$)}}{\text{GDP (\$)}} \times 100$. It is important that by this definition, we would expect this value to range from zero to infinity (note that public debt can be larger than GDP.)
+The data is sourced from the International Monetary Fund, which calculates this value by estimating the Gross Domestic Product (GDP) and public debt of a country, then performing (debt / gdp) * 100. It is important that by this definition, we would expect this value to range from zero to infinity (note that public debt can be larger than GDP.)
 
 `growth.csv` is another wide data set which has the following variables
 

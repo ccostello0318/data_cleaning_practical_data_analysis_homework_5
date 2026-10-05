@@ -23,8 +23,7 @@ debt relative to the country’s economy size?
 
 The data is sourced from the International Monetary Fund, which
 calculates this value by estimating the Gross Domestic Product (GDP) and
-public debt of a country, then
-$\frac{\text{public debt (\$)}}{\text{GDP (\$)}} \times 100$. It is
+public debt of a country, then performing (debt / gdp) \* 100. It is
 important that by this definition, we would expect this value to range
 from zero to infinity (note that public debt can be larger than GDP.)
 
